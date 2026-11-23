@@ -82,6 +82,16 @@ function startClient(token, index) {
       // 2. Pastikan pengirimnya adalah bot Jockie Music
       if (!JOCKIE_BOT_ID.map((v) => v.trim()).includes(message.author.id)) return;
 
+      // 2b. Hanya merespons jika Jockie berada di voice channel yang sama dengan akun ini
+      const myVoiceId = message.guild?.members?.me?.voice?.channelId;
+      if (!myVoiceId) return;
+      let jockieVoiceId = message.guild.members.cache.get(message.author.id)?.voice?.channelId;
+      if (jockieVoiceId === undefined) {
+        const m = await message.guild.members.fetch(message.author.id).catch(() => null);
+        jockieVoiceId = m?.voice?.channelId;
+      }
+      if (jockieVoiceId !== myVoiceId) return;
+
       // 3. Periksa apakah pesan mengandung embed
       if (message.embeds.length === 0) return;
 
