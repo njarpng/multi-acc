@@ -19,7 +19,10 @@ const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_IDS ? process.env.TARGET_CH
 // ID Asli Jockie Music Bot (biasanya diawali 411916947773587456 atau varian premiumnya)
 const JOCKIE_BOT_ID = process.env.JOCKIE_BOT_IDS ? process.env.JOCKIE_BOT_IDS.split(',') : [];
 // Nomor akun (urutan di TOKENS, mulai dari 1) yang merespons Jockie. Default: akun #1
-const RESPONDER_INDEX = parseInt(process.env.RESPONDER_INDEXS ? process.env.RESPONDER_INDEXS.split(',') : [];, 10) || 1;
+const RESPONDER_INDEXES = (process.env.RESPONDER_INDEXS ? process.env.RESPONDER_INDEXS.split(',') : [])
+  .map((n) => parseInt(n.trim(), 10))
+  .filter((n) => !Number.isNaN(n));
+if (RESPONDER_INDEXES.length === 0) RESPONDER_INDEXES.push(1);
 
 if (tokens.length === 0 || !GUILD_ID || !CHANNEL_ID) {
   console.error('Error: Pastikan TOKENS, GUILD_ID, dan CHANNEL_ID sudah diisi di Environment Variables.');
@@ -65,7 +68,7 @@ function startClient(token, index) {
 
   client.on('messageCreate', async (message) => {
       // 0. Hanya satu akun yang boleh merespons
-      if (index + 1 !== RESPONDER_INDEX) return;
+      if (!RESPONDER_INDEXES.includes(index + 1)) return;
 
       // 1. Pastikan pesan masuk di channel yang ditargetkan
       if (message.channel.id !== TARGET_CHANNEL_ID) return;
