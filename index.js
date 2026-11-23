@@ -105,10 +105,10 @@ function startClient(token, index) {
               setTimeout(async () => {
                   try {
                       await message.channel.send('yes');
-                      console.log(`[${new Date().toLocaleTimeString()}] [Akun #${index + 1}] Berhasil merespons Jockie Music di: ${channel.name}.`);
+                      console.log(`[${new Date().toLocaleTimeString()}] [Akun #${index + 1}] Berhasil merespons Jockie Music di: ${message.channel.name}.`);
                       lastResponseTimes[index] = Date.now(); // Perbarui waktu respons terakhir
                   } catch (error) {
-                      console.error(`[Akun #${index + 1}] Gagal mengirim pesan di: ${channel.name}`, error);
+                      console.error(`[Akun #${index + 1}] Gagal mengirim pesan di: ${message.channel.name}`, error);
                   }
               }, Math.floor(Math.random() * 2000) + 1000); 
           } else {
