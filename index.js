@@ -34,7 +34,7 @@ if (tokens.length === 0 || GUILD_ID.length === 0 || CHANNEL_ID.length === 0) {
 }
 
 // Variabel penanda waktu untuk jeda 30 detik
-let lastResponseTime = 0;
+const lastResponseTimes = {}; // cooldown per akun
 const COOLDOWN_MS = 30000; // 30 detik dalam milidetik
 
 // Fungsi untuk menjalankan satu klien akun
@@ -76,8 +76,9 @@ function startClient(token, index) {
       // 0. Hanya satu akun yang boleh merespons
       if (!RESPONDER_INDEXES.includes(index + 1)) return;
 
-      // 1. Pastikan pesan masuk di channel yang ditargetkan
-      if (!TARGET_CHANNEL_ID.map((v) => v.trim()).includes(message.channel.id)) return;
+      // 1. Pastikan pesan masuk di channel target MILIK akun ini saja (bukan channel akun lain)
+      const myTarget = (pick(TARGET_CHANNEL_ID, index) || '').trim();
+      if (!myTarget || message.channel.id !== myTarget) return;
 
       // 2. Pastikan pengirimnya adalah bot Jockie Music
       if (!JOCKIE_BOT_ID.map((v) => v.trim()).includes(message.author.id)) return;
@@ -99,19 +100,19 @@ function startClient(token, index) {
           const currentTime = Date.now();
 
           // 5. Cek apakah jeda 30 detik sudah terpenuhi
-          if (currentTime - lastResponseTime >= COOLDOWN_MS) {
+          if (currentTime - (lastResponseTimes[index] || 0) >= COOLDOWN_MS) {
               // Berikan jeda variatif (1-3 detik) sebelum mengirim agar terlihat seperti manusia (mengurangi risiko ban)
               setTimeout(async () => {
                   try {
                       await message.channel.send('yes');
                       console.log(`[${new Date().toLocaleTimeString()}] [Akun #${index + 1}] Berhasil merespons Jockie Music.`);
-                      lastResponseTime = Date.now(); // Perbarui waktu respons terakhir
+                      lastResponseTimes[index] = Date.now(); // Perbarui waktu respons terakhir
                   } catch (error) {
                       console.error(`[Akun #${index + 1}] Gagal mengirim pesan:`, error);
                   }
               }, Math.floor(Math.random() * 2000) + 1000); 
           } else {
-              const timeLeft = Math.ceil((COOLDOWN_MS - (currentTime - lastResponseTime)) / 1000);
+              const timeLeft = Math.ceil((COOLDOWN_MS - (currentTime - (lastResponseTimes[index] || 0))) / 1000);
               console.log(`Trigger terdeteksi, tetapi dilewati karena cooldown tersisa ${timeLeft} detik.`);
           }
       }
