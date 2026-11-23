@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Client } = require('discord.js-selfbot-v13');
-const { joinVoiceChannel, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
+const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
 
 // Web server kecil agar Railway tetap menjaga aplikasi tetap hidup
@@ -57,7 +57,7 @@ function startClient(token, index) {
         return;
       }
 
-      const connection = joinVoiceChannel({
+      joinVoiceChannel({
         channelId: channel.id,
         guildId: guild.id,
         group: client.user.id, // grup unik per akun agar koneksi tidak saling menimpa
@@ -66,33 +66,7 @@ function startClient(token, index) {
         selfMute: toBool(pick(SELF_MUTE, index), true), // Otomatis mute
       });
 
-      const tag = `[Akun #${index + 1}]`;
-      connection.on('stateChange', (o, n) => console.log(`${tag} Voice: ${o.status} -> ${n.status}`));
-      connection.on('error', (e) => console.error(`${tag} Voice error:`, e.message));
-
-      // Jangan klaim berhasil sebelum koneksi benar-benar Ready
-      try {
-        await entersState(connection, VoiceConnectionStatus.Ready, 20000);
-        console.log(`${tag} Berhasil masuk ke voice channel: ${channel.name}`);
-      } catch (e) {
-        console.error(`${tag} Gagal terhubung ke voice "${channel.name}" (status: ${connection.state.status}). Cek izin View/Connect, kapasitas channel, atau sesi lain.`);
-        connection.destroy();
-        return;
-      }
-
-      // Sambung ulang jika terputus
-      connection.on(VoiceConnectionStatus.Disconnected, async () => {
-        try {
-          await Promise.race([
-            entersState(connection, VoiceConnectionStatus.Signalling, 5000),
-            entersState(connection, VoiceConnectionStatus.Connecting, 5000),
-          ]);
-        } catch {
-          console.error(`${tag} Terputus dari voice, mencoba bergabung ulang.`);
-          connection.destroy();
-          client.emit('ready');
-        }
-      });
+      console.log(`[Akun #${index + 1}] Berhasil masuk ke voice channel: ${channel.name}`);
     } catch (error) {
       console.error(`[Akun #${index + 1}] Gagal bergabung ke voice:`, error.message);
     }
@@ -107,16 +81,6 @@ function startClient(token, index) {
 
       // 2. Pastikan pengirimnya adalah bot Jockie Music
       if (!JOCKIE_BOT_ID.map((v) => v.trim()).includes(message.author.id)) return;
-
-      // 2b. Hanya merespons jika Jockie berada di voice channel yang sama dengan akun ini
-      const myVoiceId = message.guild?.members?.me?.voice?.channelId;
-      if (!myVoiceId) return;
-      let jockieVoiceId = message.guild.members.cache.get(message.author.id)?.voice?.channelId;
-      if (jockieVoiceId === undefined) {
-        const m = await message.guild.members.fetch(message.author.id).catch(() => null);
-        jockieVoiceId = m?.voice?.channelId;
-      }
-      if (jockieVoiceId !== myVoiceId) return;
 
       // 3. Periksa apakah pesan mengandung embed
       if (message.embeds.length === 0) return;
