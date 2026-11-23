@@ -24,7 +24,11 @@ const RESPONDER_INDEXES = (process.env.RESPONDER_INDEXS ? process.env.RESPONDER_
   .filter((n) => !Number.isNaN(n));
 if (RESPONDER_INDEXES.length === 0) RESPONDER_INDEXES.push(1);
 
-if (tokens.length === 0 || !GUILD_ID || !CHANNEL_ID) {
+// Ambil nilai untuk akun ke-index; jika hanya satu nilai diisi, dipakai untuk semua akun
+const pick = (list, index) => (list.length > 0 ? list[index] !== undefined ? list[index] : list[0] : undefined);
+const toBool = (value, fallback) => (value === undefined || value === '' ? fallback : String(value).trim().toLowerCase() === 'true');
+
+if (tokens.length === 0 || GUILD_ID.length === 0 || CHANNEL_ID.length === 0) {
   console.error('Error: Pastikan TOKENS, GUILD_ID, dan CHANNEL_ID sudah diisi di Environment Variables.');
   process.exit(1);
 }
@@ -43,8 +47,10 @@ function startClient(token, index) {
     console.log(`[Akun #${index + 1}] Login sebagai ${client.user.tag}`);
 
     try {
-      const guild = await client.guilds.fetch(GUILD_ID);
-      const channel = await guild.channels.fetch(CHANNEL_ID);
+      const guildId = (pick(GUILD_ID, index) || '').trim();
+      const channelId = (pick(CHANNEL_ID, index) || '').trim();
+      const guild = await client.guilds.fetch(guildId);
+      const channel = await guild.channels.fetch(channelId);
 
       if (!channel || !channel.isVoice()) {
         console.error(`[Akun #${index + 1}] Channel tidak ditemukan atau bukan voice channel.`);
@@ -56,8 +62,8 @@ function startClient(token, index) {
         guildId: guild.id,
         group: client.user.id, // grup unik per akun agar koneksi tidak saling menimpa
         adapterCreator: guild.voiceAdapterCreator,
-        selfDeaf: SELF_DEAF, // Otomatis deafen
-        selfMute: SELF_MUTE, // Otomatis mute
+        selfDeaf: toBool(pick(SELF_DEAF, index), false), // Otomatis deafen
+        selfMute: toBool(pick(SELF_MUTE, index), true), // Otomatis mute
       });
 
       console.log(`[Akun #${index + 1}] Berhasil masuk ke voice channel: ${channel.name}`);
@@ -71,10 +77,10 @@ function startClient(token, index) {
       if (!RESPONDER_INDEXES.includes(index + 1)) return;
 
       // 1. Pastikan pesan masuk di channel yang ditargetkan
-      if (message.channel.id !== TARGET_CHANNEL_ID) return;
+      if (!TARGET_CHANNEL_ID.map((v) => v.trim()).includes(message.channel.id)) return;
 
       // 2. Pastikan pengirimnya adalah bot Jockie Music
-      if (message.author.id !== JOCKIE_BOT_ID) return;
+      if (!JOCKIE_BOT_ID.map((v) => v.trim()).includes(message.author.id)) return;
 
       // 3. Periksa apakah pesan mengandung embed
       if (message.embeds.length === 0) return;
